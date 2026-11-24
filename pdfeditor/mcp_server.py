@@ -113,7 +113,7 @@ def pdf_merge(paths: list[str], output: str, password: str | None = None) -> dic
     total = sum(view.get_info(p, password).pages for p in inputs)
     had_text = any(text_chars(p, password) for p in inputs)
     out = organize.merge(inputs, safe_path(output, must_exist=False), password)
-    return _report(out, total, had_text)
+    return _report(out, total, had_text, password)
 
 
 @server.tool(annotations=WRITES_NEW)
@@ -124,7 +124,7 @@ def pdf_split(path: str, ranges: str | None = None, every: int | None = None,
     src = safe_path(path)
     parts = organize.split(src, _out(output_dir), ranges=ranges, every=every,
                            max_mb=max_mb, password=password)
-    reports = [_report(p, None, False) for p in parts]
+    reports = [_report(p, None, False, password) for p in parts]
     return {"parts": reports, "count": len(parts), "all_verified": all(r["verified"] for r in reports)}
 
 
@@ -135,7 +135,7 @@ def pdf_extract_pages(path: str, pages: str, output: str | None = None,
     src = safe_path(path)
     n = len(parse_pages(pages, view.get_info(src, password).pages))
     out = organize.extract(src, pages, _out(output), password)
-    return _report(out, n, False)
+    return _report(out, n, False, password)
 
 
 @server.tool(annotations=WRITES_NEW)
@@ -146,7 +146,7 @@ def pdf_delete_pages(path: str, pages: str, output: str | None = None,
     total = view.get_info(src, password).pages
     removed = len(set(parse_pages(pages, total)))
     out = organize.delete(src, pages, _out(output), password)
-    return _report(out, total - removed, False)
+    return _report(out, total - removed, False, password)
 
 
 @server.tool(annotations=WRITES_NEW)
@@ -157,7 +157,7 @@ def pdf_reorder_pages(path: str, order: str, allow_partial: bool = False,
     n = len(parse_pages(order, view.get_info(src, password).pages))
     had_text = text_chars(src, password) > 0
     out = organize.reorder(src, order, _out(output), password, allow_partial=allow_partial)
-    return _report(out, n, had_text and not allow_partial)
+    return _report(out, n, had_text and not allow_partial, password)
 
 
 @server.tool(annotations=WRITES_NEW)
@@ -175,5 +175,11 @@ def main() -> None:
     server.run("stdio")
 
 
+# Feature-group tools register themselves on `server` (one file per group).
+from .mcp_tools import brand as _brand, convert as _convert, optimize as _optimize  # noqa: E402,F401
+
 if __name__ == "__main__":
-    main()
+    # `python -m pdfeditor.mcp_server` runs this file as __main__; delegate to the
+    # imported module so tools registered on its `server` are the ones served.
+    from pdfeditor.mcp_server import main as _main
+    _main()

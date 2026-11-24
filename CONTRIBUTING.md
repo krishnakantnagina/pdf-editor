@@ -30,6 +30,7 @@ python scripts/check_licenses.py
 2. **Never modify the input.** Every operation writes a new file (see `output_path()` in `pdfeditor/core/pages.py`).
 3. **Verify every output.** CLI commands and MCP tools call `verify()` and report the result.
 4. **Redaction must delete content.** Drawing a box over it is not redaction.
+   **Encryption is never silently removed.** Outputs of encrypted inputs keep the same passwords and permissions.
 5. **Tests for every feature.** Use the `make_pdf()` helper in `tests/conftest.py` to build sample PDFs in code.
    Don't commit large binary PDFs.
 6. **Offline only.** No network calls at runtime.
@@ -40,12 +41,12 @@ python scripts/check_licenses.py
 |---|---|
 | `pdfeditor/core/` | The library: one module per feature group. Pure functions: path in, path out. |
 | `pdfeditor/verify.py` | Checks each output: it opens, renders, has the right page count, and kept its text |
-| `pdfeditor/cli.py` | `pdfedit` command line (Typer). Thin wrapper around `core`. |
-| `pdfeditor/mcp_server.py` | `pdfedit-mcp` MCP server. Thin wrapper around `core`. |
+| `pdfeditor/cli.py` + `pdfeditor/commands/` | `pdfedit` command line (Typer), one module per feature group. Thin wrappers around `core`. |
+| `pdfeditor/mcp_server.py` + `pdfeditor/mcp_tools/` | `pdfedit-mcp` MCP server, one module per feature group. Thin wrappers around `core`. |
 | `tests/` | pytest |
 
-**Adding a feature** usually means: write a function in `core/`, add a test, then wire it into **both**
-`cli.py` and `mcp_server.py` so people and AI agents get it at the same time.
+**Adding a feature** usually means: write a function in `core/`, add a test, then add a command in
+`commands/<group>.py` **and** a tool in `mcp_tools/<group>.py`, so people and AI agents get it at the same time.
 
 ## Pull requests
 

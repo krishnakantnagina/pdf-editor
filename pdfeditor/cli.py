@@ -94,7 +94,7 @@ def merge(
     except (ValueError, PageSpecError) as e:
         _fail(str(e))
     typer.echo(f"Merged {len(inputs)} files -> {result}")
-    _check(result, total, had_text)
+    _check(result, total, had_text, password)
 
 
 @app.command()
@@ -116,7 +116,7 @@ def split(
     typer.echo(f"Split into {len(parts)} files in {parts[0].parent}")
     total = 0
     for p in parts:
-        res = verify(p)
+        res = verify(p, password=password)
         total += res.pages
         typer.secho(str(res), fg=typer.colors.GREEN if res.ok else typer.colors.RED)
         if not res.ok:
@@ -139,7 +139,7 @@ def extract(
     except (ValueError, PageSpecError) as e:
         _fail(str(e))
     typer.echo(f"Extracted {n} pages -> {result}")
-    _check(result, n, False)
+    _check(result, n, False, password)
 
 
 @app.command()
@@ -157,7 +157,7 @@ def delete(
     except (ValueError, PageSpecError) as e:
         _fail(str(e))
     typer.echo(f"Removed {n_removed} pages -> {result}")
-    _check(result, total - n_removed, False)
+    _check(result, total - n_removed, False, password)
 
 
 @app.command()
@@ -176,7 +176,7 @@ def reorder(
     except (ValueError, PageSpecError) as e:
         _fail(str(e))
     typer.echo(f"Reordered -> {result}")
-    _check(result, n, had_text and not partial)
+    _check(result, n, had_text and not partial, password)
 
 
 @app.command()
@@ -198,5 +198,9 @@ def rotate(
     _check(result, total, had_text, password)
 
 
+# Feature-group commands register themselves on `app` (one file per group).
+from .commands import batch, brand, convert, optimize  # noqa: E402,F401
+
 if __name__ == "__main__":
-    app()
+    from pdfeditor.cli import app as _app  # use the registered instance, not __main__'s copy
+    _app()

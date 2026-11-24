@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -57,8 +58,11 @@ def verify(
 
     # 1. Structure opens cleanly (qpdf)
     try:
-        with pikepdf.open(path, password=password or "") as pdf:
-            res.pages = len(pdf.pages)
+        with warnings.catch_warnings():
+            # Outputs of `unlock` etc. are opened with the old password; that's fine.
+            warnings.filterwarnings("ignore", message=".*password.*not needed.*")
+            with pikepdf.open(path, password=password or "") as pdf:
+                res.pages = len(pdf.pages)
     except Exception as e:  # noqa: BLE001 - report any failure
         res.ok = False
         res.problems.append(f"does not open: {e}")

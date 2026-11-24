@@ -195,7 +195,7 @@ PDF Editor/
 
 | Phase | What gets built | Done when |
 |---|---|---|
-| **1. Core + CLI** | Set up the project. P1 features from A, B, F, G, I and J, plus `verify.py` | `pdfedit merge/split/rotate/compress/protect/watermark/page-numbers/to-images` all work on the sample files |
+| **1. Core + CLI** ✅ done | Set up the project. P1 features from A, B, F, G, I and J, plus `verify.py` | `pdfedit merge/split/rotate/compress/protect/watermark/page-numbers/to-images` all work on the sample files |
 | **2. Cleaning + OCR** | Section D, the content-stream engine, redaction, English OCR | A sample paper comes out with ads, watermarks and phone numbers removed and the text searchable |
 | **3. Local web UI** | FastAPI + pdf.js: thumbnails, drag-and-drop pages, a toolbar with every P1 tool | Every P1 job can be done in the browser at `127.0.0.1:8000` |
 | **4. Editing, annotation, forms** | Sections C, E and K | Can add text, images and highlights and fill a form, then save |
