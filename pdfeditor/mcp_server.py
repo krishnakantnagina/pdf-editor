@@ -175,5 +175,11 @@ def main() -> None:
     server.run("stdio")
 
 
+# Feature-group tools register themselves on `server` (one file per group).
+from .mcp_tools import brand as _brand, convert as _convert, optimize as _optimize  # noqa: E402,F401
+
 if __name__ == "__main__":
-    main()
+    # `python -m pdfeditor.mcp_server` runs this file as __main__; delegate to the
+    # imported module so tools registered on its `server` are the ones served.
+    from pdfeditor.mcp_server import main as _main
+    _main()

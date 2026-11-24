@@ -11,19 +11,20 @@ license = "MIT"
 authors = [{ name = "Krishnakant Nagina" }]
 keywords = ["pdf", "pdf-editor", "mcp", "claude", "offline", "cli"]
 requires-python = ">=3.11"
-# Licenses: pikepdf MPL-2.0, pypdfium2 Apache-2.0/BSD-3, pypdf BSD-3, typer MIT
+# Licenses: pikepdf MPL-2.0, pypdfium2 Apache-2.0/BSD-3, pypdf BSD-3, typer MIT, reportlab BSD, pillow MIT-CMU
 dependencies = [
     "pikepdf>=9",
     "pypdfium2>=4",
     "pypdf>=5",
     "typer>=0.12",
+    "reportlab>=4",
+    "pillow>=10",
 ]
 
 [project.optional-dependencies]
 # MCP server for Claude Code and other MCP clients (mcp: MIT)
 mcp = ["mcp>=2,<3"]
-# reportlab (BSD) is used to generate sample PDFs in tests
-dev = ["pytest>=8", "reportlab>=4", "mcp>=2,<3"]
+dev = ["pytest>=8", "mcp>=2,<3"]
 
 [project.scripts]
 pdfedit = "pdfeditor.cli:app"

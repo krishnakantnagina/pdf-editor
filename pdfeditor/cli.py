@@ -198,5 +198,9 @@ def rotate(
     _check(result, total, had_text, password)
 
 
+# Feature-group commands register themselves on `app` (one file per group).
+from .commands import brand, convert, optimize  # noqa: E402,F401
+
 if __name__ == "__main__":
-    app()
+    from pdfeditor.cli import app as _app  # use the registered instance, not __main__'s copy
+    _app()

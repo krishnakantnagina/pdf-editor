@@ -20,7 +20,7 @@ def call(name, **args):
 
 def test_tools_are_registered():
     names = {t.name for t in asyncio.run(mcp_server.server.list_tools())}
-    assert names == {
+    assert names >= {
         "pdf_info", "pdf_verify", "pdf_merge", "pdf_split", "pdf_extract_pages",
         "pdf_delete_pages", "pdf_reorder_pages", "pdf_rotate_pages",
     }
