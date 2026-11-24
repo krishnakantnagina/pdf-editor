@@ -315,3 +315,26 @@ def test_mcp_through_protocol_layer(mcp, pdf5):
     mcp_server, _ = mcp
     result = asyncio.run(mcp_server.server.call_tool("pdf_extract_text", {"path": str(pdf5), "pages": "3"}))
     assert "Page 3" in str(result)
+
+
+def test_from_images_embeds_jpeg_without_reencoding(tmp_path):
+    import random
+
+    import pikepdf
+    from PIL import Image
+
+    from pdfeditor.core import convert
+
+    rng = random.Random(1)
+    img = Image.new("RGB", (800, 600))
+    img.putdata([(rng.randrange(256), rng.randrange(256), rng.randrange(256)) for _ in range(800 * 600)])
+    jpg = tmp_path / "photo.jpg"
+    img.save(jpg, quality=80)
+
+    out = convert.from_images([jpg], tmp_path / "photo.pdf")
+    with pikepdf.open(out) as pdf:
+        (xobj,) = pdf.pages[0].get_images().values()
+        assert xobj.Filter == "/DCTDecode" or list(xobj.Filter) == ["/DCTDecode"]
+        assert xobj.read_raw_bytes() == jpg.read_bytes()
+    # PDF overhead only: not a lossless re-encode that is several times bigger
+    assert out.stat().st_size < jpg.stat().st_size * 1.05 + 4096

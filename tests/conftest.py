@@ -20,11 +20,11 @@ def make_pdf(path: Path, pages: int, label: str = "Page") -> Path:
     return path
 
 
-def page_labels(path: Path) -> list[str]:
+def page_labels(path: Path, password: str | None = None) -> list[str]:
     """First line of text on each page, e.g. ['Page 1', 'Page 2']."""
     import pypdfium2 as pdfium
 
-    doc = pdfium.PdfDocument(str(path))
+    doc = pdfium.PdfDocument(str(path), password=password)
     labels = []
     for i in range(len(doc)):
         page = doc[i]

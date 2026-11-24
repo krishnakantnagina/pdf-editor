@@ -15,6 +15,7 @@ import pypdfium2 as pdfium
 from PIL import Image, ImageOps, ImageSequence
 from reportlab.lib.pagesizes import A4, LETTER
 from reportlab.lib.units import mm
+from reportlab import rl_config
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
@@ -130,6 +131,16 @@ def _normalize(img: Image.Image) -> Image.Image:
     return img.convert("RGB")
 
 
+def _jpeg_passthrough(img: Image.Image) -> bool:
+    """True if a JPEG can be embedded byte-for-byte (no re-encode, no size growth).
+
+    Only plain RGB/greyscale JPEGs that need no EXIF rotation qualify; CMYK and
+    rotated JPEGs are decoded and normalised instead.
+    """
+    return (img.format == "JPEG" and img.mode in ("RGB", "L")
+            and img.getexif().get(0x0112, 1) == 1)
+
+
 def count_pages(images: list[Path]) -> int:
     """How many PDF pages from_images() will make (multi-frame TIFFs count each frame)."""
     total = 0
@@ -174,6 +185,15 @@ def from_images(images: list[Path], out: Path, page_size: str = "fit", margin_mm
 
     margin = margin_mm * mm
     base = PAGE_SIZES[size_key]
+    # reportlab ASCII85-wraps image data by default (+25% size); binary is fine for files.
+    old_a85, rl_config.useA85 = rl_config.useA85, 0
+    try:
+        return _build_from_images(files, out, base, margin)
+    finally:
+        rl_config.useA85 = old_a85
+
+
+def _build_from_images(files: list[Path], out: Path, base, margin: float) -> Path:
     c = canvas.Canvas(str(out))
     c.setCreator("pdfeditor")
     pages = 0
@@ -181,6 +201,7 @@ def from_images(images: list[Path], out: Path, page_size: str = "fit", margin_mm
         try:
             with Image.open(p) as probe:
                 dpi = _image_dpi(probe.info)
+                passthrough = _jpeg_passthrough(probe)
         except Exception as e:  # noqa: BLE001 - give a clear message for any bad image
             raise ValueError(f"cannot read image {p.name}: {e}") from e
         for img in _frames(p):
@@ -199,7 +220,9 @@ def from_images(images: list[Path], out: Path, page_size: str = "fit", margin_mm
                 img_w, img_h = w_px * scale, h_px * scale
                 x, y = (page_w - img_w) / 2, (page_h - img_h) / 2
             c.setPageSize((page_w, page_h))
-            c.drawImage(ImageReader(img), x, y, width=img_w, height=img_h)
+            # A file path makes reportlab embed the original JPEG data (DCTDecode) unchanged.
+            source = str(p) if passthrough else ImageReader(img)
+            c.drawImage(source, x, y, width=img_w, height=img_h)
             c.showPage()
             pages += 1
     if not pages:

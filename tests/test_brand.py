@@ -232,10 +232,11 @@ def test_encrypted_input(tmp_path):
     with pikepdf.open(src) as pdf:
         pdf.save(tmp_path / "enc.pdf", encryption=pikepdf.Encryption(owner="o", user="pw"))
     out = brand.page_numbers(tmp_path / "enc.pdf", fmt="PN{n}", password="pw")
-    # like the other operations, the output is saved without encryption
-    res = verify(out, expected_pages=2, expect_text=True)
+    # the output keeps the input's encryption (same passwords and permissions)
+    assert not verify(out).ok
+    res = verify(out, expected_pages=2, expect_text=True, password="pw")
     assert res.ok, res.problems
-    assert "PN2" in page_texts(out)[1]
+    assert "PN2" in page_texts(out, password="pw")[1]
 
 
 # ---------- header / footer ----------
@@ -359,3 +360,17 @@ def test_mcp_paths_outside_allowed_are_refused(mcp, pdf3, png, tmp_path, monkeyp
     inside = make_pdf(pdf3.parent / "docs" / "d.pdf", 1)
     with pytest.raises(PermissionError):  # image outside allowed folders
         tools.pdf_add_watermark(str(inside), image=str(png))
+
+
+def test_branding_keeps_encryption(pdf5, tmp_path):
+    import pikepdf
+    from pdfeditor.core import brand
+    locked = tmp_path / "locked.pdf"
+    with pikepdf.open(pdf5) as pdf:
+        pdf.save(locked, encryption=pikepdf.Encryption(owner="OWNER", user="user",
+                                                       allow=pikepdf.Permissions(modify_other=False)))
+    out = brand.page_numbers(locked, password="user")
+    with pytest.raises(pikepdf.PasswordError):
+        pikepdf.open(out)
+    with pikepdf.open(out, password="OWNER") as pdf:
+        assert pdf.owner_password_matched and not pdf.allow.modify_other

@@ -124,7 +124,7 @@ def test_encrypted_input(pdf5, tmp_path):
         view.get_info(locked)
     assert view.get_info(locked, password="secret").encrypted
     out = organize.extract(locked, "1-2", password="secret")
-    assert page_labels(out) == ["Page 1", "Page 2"]
+    assert page_labels(out, password="secret") == ["Page 1", "Page 2"]
 
 
 def test_verify_catches_problems(pdf5, tmp_path):
@@ -132,3 +132,53 @@ def test_verify_catches_problems(pdf5, tmp_path):
     bad = tmp_path / "bad.pdf"
     bad.write_bytes(b"not a pdf")
     assert not verify(bad).ok
+
+
+# ---------- encryption is never silently removed ----------
+
+@pytest.fixture
+def restricted(pdf5, tmp_path):
+    """Encrypted with a user password and an owner password; copying text is not allowed."""
+    path = tmp_path / "restricted.pdf"
+    with pikepdf.open(pdf5) as pdf:
+        pdf.save(path, encryption=pikepdf.Encryption(
+            owner="OWNER", user="user", allow=pikepdf.Permissions(extract=False)))
+    return path
+
+
+def _assert_same_protection(out):
+    with pytest.raises(pikepdf.PasswordError):
+        pikepdf.open(out)
+    with pikepdf.open(out, password="user") as pdf:
+        assert pdf.is_encrypted and not pdf.allow.extract
+        assert not pdf.owner_password_matched
+    with pikepdf.open(out, password="OWNER") as pdf:
+        assert pdf.owner_password_matched
+
+
+@pytest.mark.parametrize("op", [
+    lambda p: organize.extract(p, "3,1", password="user"),
+    lambda p: organize.delete(p, "2", password="user"),
+    lambda p: organize.reorder(p, "reverse", password="user"),
+    lambda p: organize.rotate(p, 90, password="user"),
+])
+def test_outputs_keep_encryption_and_permissions(restricted, op):
+    _assert_same_protection(op(restricted))
+
+
+def test_split_parts_keep_encryption(restricted):
+    for part in organize.split(restricted, every=2, password="user"):
+        _assert_same_protection(part)
+
+
+@pytest.mark.filterwarnings("ignore:A password was provided")
+def test_merge_keeps_first_files_encryption(restricted, pdf3, tmp_path):
+    out = organize.merge([restricted, pdf3], tmp_path / "m.pdf", password="user")
+    _assert_same_protection(out)
+    with pikepdf.open(out, password="user") as pdf:
+        assert len(pdf.pages) == 8
+
+
+def test_merge_refuses_to_strip_protection_from_later_file(restricted, pdf3, tmp_path):
+    with pytest.warns(UserWarning), pytest.raises(ValueError, match="password-protected"):
+        organize.merge([pdf3, restricted], tmp_path / "m.pdf", password="user")
