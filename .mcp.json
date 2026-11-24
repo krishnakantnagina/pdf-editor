@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "pdf-editor": {
+      "command": "python",
+      "args": ["-m", "pdfeditor.mcp_server"]
+    }
+  }
+}

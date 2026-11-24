@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest a new PDF feature or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do with your PDFs?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: How should it work?
+      description: Example command, e.g. `pdfedit watermark file.pdf --text DRAFT`
+  - type: textarea
+    id: library
+    attributes:
+      label: Library idea (optional)
+      description: Must be MIT, BSD, Apache-2.0, ISC, MPL-2.0 or PSF. No GPL, LGPL or AGPL.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to build this myself

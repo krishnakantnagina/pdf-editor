@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdfeditor"
+version = "0.1.0"
+description = "Offline PDF toolkit and MCP server built only on permissively licensed libraries"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Krishnakant Nagina" }]
+keywords = ["pdf", "pdf-editor", "mcp", "claude", "offline", "cli"]
+requires-python = ">=3.11"
+# Licenses: pikepdf MPL-2.0, pypdfium2 Apache-2.0/BSD-3, pypdf BSD-3, typer MIT
+dependencies = [
+    "pikepdf>=9",
+    "pypdfium2>=4",
+    "pypdf>=5",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+# MCP server for Claude Code and other MCP clients (mcp: MIT)
+mcp = ["mcp>=2,<3"]
+# reportlab (BSD) is used to generate sample PDFs in tests
+dev = ["pytest>=8", "reportlab>=4", "mcp>=2,<3"]
+
+[project.scripts]
+pdfedit = "pdfeditor.cli:app"
+pdfedit-mcp = "pdfeditor.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["pdfeditor*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
